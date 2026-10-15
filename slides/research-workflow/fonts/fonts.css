@@ -1,0 +1,6 @@
+@font-face{font-family:'Liberation Serif';font-style:normal;font-weight:100 500;font-display:block;src:url(fonts/LiberationSerif-Regular.woff2) format('woff2');}
+@font-face{font-family:'Liberation Serif';font-style:normal;font-weight:600 900;font-display:block;src:url(fonts/LiberationSerif-Bold.woff2) format('woff2');}
+@font-face{font-family:'Liberation Serif';font-style:italic;font-weight:100 500;font-display:block;src:url(fonts/LiberationSerif-Italic.woff2) format('woff2');}
+@font-face{font-family:'Liberation Serif';font-style:italic;font-weight:600 900;font-display:block;src:url(fonts/LiberationSerif-BoldItalic.woff2) format('woff2');}
+@font-face{font-family:'JetBrains Mono';font-style:normal;font-weight:400;font-display:block;src:url(fonts/JetBrainsMono-normal.woff2) format('woff2');}
+@font-face{font-family:'JetBrains Mono';font-style:normal;font-weight:600;font-display:block;src:url(fonts/JetBrainsMono-normal.woff2) format('woff2');}

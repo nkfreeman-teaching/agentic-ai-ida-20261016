@@ -1,0 +1,7 @@
+# Renders are rebuilt by render.sh and distributed outside git (tens of MB per video).
+*/build/
+*/output/
+media/
+slides/
+logs/
+.pixi/

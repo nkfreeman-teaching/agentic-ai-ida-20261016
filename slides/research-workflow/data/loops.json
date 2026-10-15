@@ -1,0 +1,31 @@
+{
+  "source": "Mean reviewer score by round in five review-loop runs, October 2026",
+  "loops": {
+    "Loop 1": [
+      3.58,
+      4.16,
+      4.13,
+      4.23
+    ],
+    "Loop 2": [
+      3.67,
+      4.12,
+      4.08
+    ],
+    "Loop 3": [
+      3.74,
+      4.11,
+      4.15
+    ],
+    "Loop 4": [
+      3.33,
+      3.85,
+      3.88
+    ],
+    "Loop 5": [
+      3.5,
+      4.06,
+      4.11
+    ]
+  }
+}
