@@ -83,7 +83,7 @@ with exported results makes a research video. For research, read `references/res
    fails is a finding about the source or the computation; resolve it before drawing.
 5. **Build the display layer, check it, and sample it.** Write the scenes with the helpers in
    `shared/explainer.py` (`title_card`, `say`, `pause`, `mark`, `clear_stage`). Keep each caption
-   sentence to about 75 characters. From `manim/`, run `pixi run render <slug> check` after every
+   sentence to about 69 characters. From `manim/`, run `pixi run render <slug> check` after every
    round of scene edits: it runs every scene without rendering and lists every caption too wide to
    fit, every caption that would shrink, and every removal that would play without a click. Then
    render the first part alone, `PARTS="<first scene class>" pixi run render <slug> preview`, and
