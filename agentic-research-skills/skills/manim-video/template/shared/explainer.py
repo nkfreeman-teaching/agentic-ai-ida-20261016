@@ -25,6 +25,7 @@ from manim import (
     FadeOut,
     ManimColor,
     MarkupText,
+    Rectangle,
     Scene,
     Text,
     VGroup,
@@ -49,18 +50,26 @@ ACCEPT = ManimColor("#027A5A")
 ALERT = ManimColor("#D55E00")
 
 CAPTION_Y = 3.4
+# Captions hang from a fixed top edge, so a second line grows downward and the first line
+# never jumps when a caption changes between one and two lines; the top sits 0.38 units
+# (about 34 px at 720p) below the frame edge (polish review, 2026-10-15).
+CAPTION_TOP = 3.62
 CAPTION_SIZE = 30
-CAPTION_MAX_WIDTH = 12.8
+# 11.8 units is about 83% of the frame; a one-line caption that runs edge to edge looks
+# crowded (three-reviewer polish pass on a research pitch, 2026-10-15; was 12.8).
+CAPTION_MAX_WIDTH = 11.8
 # A caption that would need shrinking below this factor is a copy defect, not a layout one.
 CAPTION_MIN_SCALE = 0.9
 PANEL_SIZE = 26
+FOOTNOTE_Y = -3.6
 
 # Seconds a caption stays up before a break, so the continuous MP4 is readable on its own.
 # The deck stops at the break anyway.
 READ = 2.2
 
 # Every animation, wait, and checkpoint offset runs PACE times as long as the scene code
-# says, so a presenter can talk over the motion (1.25 since Oct 12, 2026).
+# says, so a presenter can talk over the motion (1.25 since Oct 12, 2026). A video sets its
+# own pace and hold as the scene class attributes `pace` and `read` (2026-10-15).
 PACE = 1.25
 
 # manim-slides stores clip paths as given and resolves them against this folder's parent,
@@ -97,16 +106,16 @@ def markup(text, size=24, color=INK):
     return _one_line(MarkupText, text, size, color)
 
 
-def make_caption(text, min_scale=CAPTION_MIN_SCALE):
+def make_caption(text, min_scale=CAPTION_MIN_SCALE, max_width=CAPTION_MAX_WIDTH):
     """One line when it fits, otherwise two lines split at the sentence boundary that
     best balances their widths. Refuses copy that would need shrinking below min_scale."""
     line = label(text, size=CAPTION_SIZE)
-    if line.width <= CAPTION_MAX_WIDTH:
-        return line.move_to([0, CAPTION_Y, 0])
+    if line.width <= max_width:
+        return line.move_to([0, CAPTION_TOP, 0], aligned_edge=UP)
     sentences = [part.strip() for part in text.replace(". ", ".\n").replace("? ", "?\n").split("\n")]
     if len(sentences) < 2:
         raise ValueError(
-            f"Caption is one sentence too wide for one line ({line.width:.1f} > {CAPTION_MAX_WIDTH}): {text!r}",
+            f"Caption is one sentence too wide for one line ({line.width:.1f} > {max_width}): {text!r}",
         )
     splits = [
         (" ".join(sentences[:cut]), " ".join(sentences[cut:])) for cut in range(1, len(sentences))
@@ -116,14 +125,40 @@ def make_caption(text, min_scale=CAPTION_MIN_SCALE):
         DOWN,
         buff=0.12,
     )
-    if lines.width > CAPTION_MAX_WIDTH:
-        if CAPTION_MAX_WIDTH / lines.width < min_scale:
+    if lines.width > max_width:
+        if max_width / lines.width < min_scale:
             raise ValueError(
                 f"Caption needs a shorter sentence ({lines.width:.1f} > "
-                f"{CAPTION_MAX_WIDTH / min_scale:.1f}): {text!r}",
+                f"{max_width / min_scale:.1f}): {text!r}",
             )
-        lines.scale_to_fit_width(CAPTION_MAX_WIDTH)
-    return lines.move_to([0, CAPTION_Y, 0])
+        lines.scale_to_fit_width(max_width)
+    return lines.move_to([0, CAPTION_TOP, 0], aligned_edge=UP)
+
+
+def text_block(lines, size=24, color=INK, buff=0.16):
+    """Lines of text stacked and centered on one another. A block placed at the middle of
+    the frame reads as ragged when its lines are left-aligned, so center by default; keep
+    left alignment for bulleted lists and table columns (author's ruling, 2026-10-15)."""
+    return VGroup(*(label(line, size=size, color=color) for line in lines)).arrange(DOWN, buff=buff)
+
+
+def with_backing(mob, buff=0.05):
+    """Put a white plate behind text that sits over gridlines, shading, or a reference
+    line, so the line does not strike the glyphs through (polish review, 2026-10-15)."""
+    plate = Rectangle(
+        width=mob.width + 2 * buff,
+        height=mob.height + 2 * buff,
+        stroke_width=0,
+        fill_color=WHITE,
+        fill_opacity=1,
+    ).move_to(mob)
+    return VGroup(plate, mob)
+
+
+def footnote(text):
+    """A source or disclosure note in the one footnote slot, centered at the frame's
+    bottom (polish review, 2026-10-15)."""
+    return label(text, size=18, color=MUTED).move_to([0, FOOTNOTE_Y, 0])
 
 
 def formula_panel(lines, x, top_y, size=PANEL_SIZE):
@@ -171,6 +206,16 @@ class ExplainerScene(Slide):
     # The HTML deck plays each slide forward only, so the reversed clips the Qt player
     # uses are not worth their render time.
     skip_reversing = True
+    # Run-time multiplier and hold before a break; a faster cut (a pitch) lowers both.
+    pace = PACE
+    read = READ
+    # Reading speed in caption characters per second. When set, a break holds until the
+    # current caption has been on screen for len(caption) / cps seconds of video, never less
+    # than `read`, so a long caption is not cut off when `pace` is low. None keeps the
+    # fixed hold (2026-10-15).
+    cps = None
+    # Widest one-line caption, in frame units.
+    caption_max_width = CAPTION_MAX_WIDTH
 
     def __init__(self, *args, **kwargs):
         # manim 0.22 copies max_files_cached into the file writer's settings in
@@ -199,6 +244,8 @@ class ExplainerScene(Slide):
 
     def setup(self):
         self.caption = None
+        self.caption_chars = 0
+        self.caption_shown_at = 0.0
         self.checkpoints = []
         self.caption_errors = []
         self.caption_warnings = []
@@ -214,10 +261,10 @@ class ExplainerScene(Slide):
         waits are scaled here too, and a wait alone shows nothing new."""
         prepared = [prepare_animation(animation) for animation in animations]
         if "run_time" in kwargs:
-            kwargs["run_time"] = _whole_frames(kwargs["run_time"] * PACE)
+            kwargs["run_time"] = _whole_frames(kwargs["run_time"] * self.pace)
         else:
             for animation in prepared:
-                animation.run_time = _whole_frames(animation.run_time * PACE)
+                animation.run_time = _whole_frames(animation.run_time * self.pace)
         if config["dry_run"] and not self.helper_playing and self.content_since_break:
             if any(_fades_out(animation) for animation in prepared):
                 shown = getattr(self.caption, "text", None) or "(two-line caption)"
@@ -239,10 +286,15 @@ class ExplainerScene(Slide):
             self.content_since_break = True
 
     def mark(self, name, offset=0.0):
-        self.checkpoints.append({"name": name, "time": round(float(self.time) + offset * PACE, 3)})
+        self.checkpoints.append({"name": name, "time": round(float(self.time) + offset * self.pace, 3)})
 
-    def pause(self, name, hold=READ):
+    def pause(self, name, hold=None):
         """Hold for viewers of the continuous MP4, then end the slide here."""
+        if hold is None:
+            hold = self.read
+            if self.cps and self.caption is not None:
+                on_screen = float(self.time) - self.caption_shown_at
+                hold = max(hold, (self.caption_chars / self.cps - on_screen) / self.pace)
         if hold:
             self.wait(hold)
         self.mark(f"break-{name}", offset=-0.1)
@@ -281,7 +333,7 @@ class ExplainerScene(Slide):
         """Show a caption. Replacing one takes a click first if anything has played since
         the last break, so the presenter decides when the old words leave."""
         try:
-            new = make_caption(text)
+            new = make_caption(text, max_width=self.caption_max_width)
         except ValueError as error:
             # render.sh check collects every caption defect in one pass instead of
             # stopping at the first; a real render still stops here.
@@ -292,7 +344,7 @@ class ExplainerScene(Slide):
         else:
             if config["dry_run"]:
                 try:
-                    make_caption(text, min_scale=1)
+                    make_caption(text, min_scale=1, max_width=self.caption_max_width)
                 except ValueError:
                     self.caption_warnings.append(f"Caption shrinks to fit: {text!r}")
         if self.caption is not None and (self.caption_since_break or self.content_since_break):
@@ -308,6 +360,8 @@ class ExplainerScene(Slide):
             )
         self.helper_playing = False
         self.caption = new
+        self.caption_chars = len(text)
+        self.caption_shown_at = float(self.time)
         self.caption_since_break = True
         self.mark(f"caption-{len(self.checkpoints):02d}", offset=0.3)
         if hold:

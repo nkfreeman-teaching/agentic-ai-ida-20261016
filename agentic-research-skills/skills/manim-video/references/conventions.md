@@ -28,11 +28,13 @@ such as the Tijuana and H-2A videos). The template already enforces the ones mar
 - Captions have at most two lines, split at a sentence boundary, and `make_caption` raises
   an error on copy that would need shrinking below 90 percent (enforced). Shorten the
   sentence; never lower the limit.
-- One caption line at the default size (30) holds about 75 characters, i.e., 12.8 frame
-  units (measured on the Tijuana test: 72 characters came to 12.2 units and 82 to 13.7). A
-  one-sentence caption longer than that fails, and a two-sentence caption with a longer
-  sentence shrinks, which leaves captions at uneven sizes. `render.sh <video> check` lists
-  both kinds in one pass.
+- One caption line at the default size (30) holds about 69 characters, i.e., 11.8 frame
+  units (the limit since Oct 15, 2026; it was 12.8, about 75 characters, measured on the
+  Tijuana test, where 72 characters came to 12.2 units). A one-sentence caption longer than
+  that fails, and a two-sentence caption with a longer sentence shrinks, which leaves
+  captions at uneven sizes. `render.sh <video> check` lists both kinds in one pass.
+- Captions hang from a fixed top edge (`CAPTION_TOP`), so a second line grows downward and
+  the first line never jumps between a one-line and a two-line caption (enforced).
 - Never `scale_to_fit_width` a label unconditionally, since it enlarges short strings to the
   target width. Shrink only when the label is wider than its slot.
 - Anchor rows of text by an edge (`move_to(point, aligned_edge=UP)`), because center-anchored
@@ -67,6 +69,11 @@ such as the Tijuana and H-2A videos). The template already enforces the ones mar
   something should call `mark()`, with an offset into the motion for mid-transition stills.
 - `READ` (2.2 s) is the hold before each break, so the continuous MP4 reads without a
   presenter. A part ends on a caption held about 3.5 s.
+- A faster cut (a pitch sent by email) sets the scene class attributes `pace`, `read`, and
+  `cps` instead of editing the constants. With `cps` set, a break holds until the caption
+  has been on screen for its length divided by `cps` seconds, so a lower `pace` never cuts a
+  long caption short. A research pitch video used `pace = 0.85`, `read = 1.5`, and
+  `cps = 17`, which took a 5.5-minute explainer's material to a 2:40 cut.
 
 ## Clicks and pace (author's ruling, Oct 12, 2026)
 
@@ -171,6 +178,56 @@ someone outside the field who has not read the source, unless the user names ano
 - **Do not define twice.** Once a term is grounded, later captions use it plainly; repeated
   definitions take caption space a later point needs.
 
+## Visual polish (author's ruling and three-reviewer pass, Oct 15, 2026)
+
+These came from the author's review of a research explainer and a blind pass over
+the stills of its pitch cut by Opus, Sonnet, and Codex, each finding verified against the
+frames before it was adopted. They apply to every new video.
+
+- **Outline every filled bar** with a thin black stroke (about 1.2), so bars read against
+  white and against shaded bands. Shaded regions (a window, a thicket) stay unstroked.
+- **Center multi-line text blocks** with `text_block`. A block at the middle of the frame
+  reads as ragged when its lines are left-aligned. Keep left alignment for bulleted lists
+  and table columns only.
+- **Keep everything at least 0.5 units inside the frame edges**, labels included, and assert
+  it where a label's width depends on its text (a series name right-aligned to an axis).
+- **Center each step's final composition between the caption and the footnote slot**
+  (about y = -0.45), and place earlier elements in their final slots so nothing jumps.
+- **One box style.** One stroke width (2), one corner radius (0.12), equal padding, and three
+  text roles: title 26, body 22, source 18 muted, always in that order. Boxes in one row or
+  column share a width and a height. Neutral borders are mid-gray (about #9A9A9A), and a
+  colored border means a category.
+- **Parallel items get parallel containers.** Two cited studies are both boxed; two
+  statistics are both cards of one size.
+- **On-screen text adds what the caption does not** (a number, a name, a source, a label on
+  a drawn object). Never repeat the caption's sentence on screen.
+- **A caption's claim needs a visible change.** If a caption says growth came from one
+  component, split the bar; a settled frame identical to the one before reads as a dropped
+  animation.
+- **Light category colors get a darker text tone.** Amber (#E69F00) has about 2.2:1 contrast
+  on white, so amber text uses about #9A6700 (4.9:1) and the light value stays for fills.
+- **Category colors keep their meaning in every part.** Ordered groups (decades) use an
+  ordered single-hue ramp that reuses no category color.
+- **Chart text has three sizes**: ticks 20, axis titles 22, data labels 22. Nothing that must
+  be read is smaller than 18. A chart's metric title sits beside its plot (above it,
+  left-aligned at the baseline's start), never floating mid-height without an axis.
+- **Under a chart the rows run tick labels, then group sizes ("n = 246"), then the axis
+  title**, so each count sits under its group.
+- **Text over gridlines, shading, or a reference line gets a white backing plate**
+  (`with_backing`), including direct data labels and bar labels.
+- **Legends sit outside the plot area**, in one row above it; side notes go to the footnote
+  slot.
+- **An interval sits on or directly beside what it describes**, with its estimate marked.
+- **One footnote slot** (`footnote()`, centered at y = -3.6, size 18, muted) for sources and
+  "Illustration" notes.
+- **Connectors share one arrowhead size** (`tip_length` about 0.2) and run from parent
+  bottom-center to child top-center; an annotation on a filter step sits beside the arrow,
+  not in its path.
+- **Typography**: a true minus sign (U+2212) in tick labels; straight quotes and apostrophes
+  (the author's style rule overrides a reviewer preference for curly ones).
+- **A video sent to someone cold opens and closes on a title card** with the title, authors,
+  affiliations, and the work it builds on.
+
 ## Frame review
 
 - Review at 720p or higher, and read every contact sheet as an image. A clean exit code is
@@ -183,7 +240,10 @@ someone outside the field who has not read the source, unless the user names ano
   acronym, or unit that appears before its definition. Each one is a defect, fixed by moving
   or adding the definition, not by assuming the viewer knows it.
 - A reviewer (a subagent or Codex) repeats what the pixels show and sometimes invents
-  content. Check each claim against the frame and the source before applying it.
+  content. Check each claim against the frame and the source before applying it. On a
+  research pitch video, one reviewer placed the clipped timeline labels in the wrong parts
+  and another misread a label, though both underlying defects were real.
+- Check each frame against "Visual polish" above as well as this list.
 
 ## Desktop automation (Qt player or a manual deck test)
 
