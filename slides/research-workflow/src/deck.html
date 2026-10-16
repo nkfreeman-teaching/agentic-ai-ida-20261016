@@ -378,6 +378,10 @@ table.tbl td.skill.t-violet { color: var(--c-violet); } table.tbl td.skill.t-gre
 .skills .duo table.tbl { font-size: 27px; }
 .skills pre.code { font-size: 24px; }
 .cards.two .card p, .cards.habits .card p { font-size: 27px; }
+ul.ticks.agenda { margin-top: 70px; }
+ul.ticks.agenda li { padding: 30px 0 30px 52px; font-size: 30px; line-height: 1.4; }
+ul.ticks.agenda li::before { top: 46px; width: 16px; height: 16px; }
+ul.ticks.agenda li b { display: block; font-size: 40px; margin-bottom: 6px; }
 
 </style>
 </head>
@@ -394,26 +398,37 @@ table.tbl td.skill.t-violet { color: var(--c-violet); } table.tbl td.skill.t-gre
   <div class="hint">Press ? for keys</div>
 </section>
 
-<!-- ============ 2 QUOTES ============ -->
-<section class="slide" data-time="1:00" data-title="Advice from tool builders">
-  <h2>Advice from tool builders</h2>
-  <div class="cards two quotes">
-    <div class="card accent b-teal f"><blockquote>"LLMs are exceptionally good at looping until they meet specific goals... Don't tell it what to do, give it success criteria and watch it go."</blockquote><div class="foot">Andrej Karpathy, on X, January 26, 2026</div></div>
-    <div class="card accent b-orange f"><blockquote>"Probably the most important thing to get great results out of Claude Code: give Claude a way to verify its work. If Claude has that feedback loop, it will 2-3x the quality of the final result."</blockquote><div class="foot">Boris Cherny, on X, January 2, 2026</div></div>
-  </div>
+<!-- ============ 2 TOPICS ============ -->
+<section class="slide" data-time="1:00" data-title="Topics">
+  <h2>Topics</h2>
+  <ul class="ticks agenda">
+    <li class="b-blue"><b>Voice for context</b><span>Speak the whole picture instead of typing a careful prompt, so the model can reason about what we are trying to do</span></li>
+    <li class="b-violet"><b>Loops</b><span>Give the agent success criteria and a way to check its work, then let it repeat until it meets them</span></li>
+    <li class="b-orange"><b>Adversaries and skeptics</b><span>Subagents that attack the work, ideally a different model (the Codex plugin, a newer version, or another vendor)</span></li>
+    <li class="b-green"><b>Pictures and video</b><span>Diagrams and short videos that keep us caught up with what the agents have done</span></li>
+  </ul>
 </section>
 
-<!-- ============ 3 RAMBLING ============ -->
-<section class="slide" data-time="3:00" data-title="Rambling">
-  <h2>Rambling</h2>
+<!-- ============ 3 VOICE FOR CONTEXT ============ -->
+<section class="slide" data-time="3:00" data-title="Voice for context">
+  <h2>Voice for context</h2>
   <div class="cards two quotes">
     <div class="card accent b-blue f"><blockquote>"One pattern I find useful for working with LLMs is a nice long ramble session. Sometimes the LLM needs more bits to understand what you're trying to achieve..."</blockquote><div class="foot">Andrej Karpathy, on X, July 21, 2026</div></div>
     <div class="card accent b-blue f"><blockquote>"Fun fact: I do most of my coding by speaking to Claude, rather than typing."</blockquote><div class="foot">Boris Cherny, on X, March 29, 2026</div></div>
   </div>
 </section>
 
-<!-- ============ 4 WORKFLOW ============ -->
-<section class="slide focus" data-steps="3" data-time="6:00" data-title="The workflow">
+<!-- ============ 4 LOOPS ============ -->
+<section class="slide" data-time="5:00" data-title="Loops">
+  <h2>Loops</h2>
+  <div class="cards two quotes">
+    <div class="card accent b-teal f"><blockquote>"LLMs are exceptionally good at looping until they meet specific goals... Don't tell it what to do, give it success criteria and watch it go."</blockquote><div class="foot">Andrej Karpathy, on X, January 26, 2026</div></div>
+    <div class="card accent b-orange f"><blockquote>"Probably the most important thing to get great results out of Claude Code: give Claude a way to verify its work. If Claude has that feedback loop, it will 2-3x the quality of the final result."</blockquote><div class="foot">Boris Cherny, on X, January 2, 2026</div></div>
+  </div>
+</section>
+
+<!-- ============ 5 WORKFLOW ============ -->
+<section class="slide focus" data-steps="3" data-time="7:00" data-title="The workflow">
   <h2>The workflow</h2>
   <svg class="diagram" viewBox="0 0 1656 470" role="img" aria-label="Six stages from ideas to video, with three decisions kept by the researcher" style="margin-top: 190px">
     <defs><marker id="ah4" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="9" markerHeight="9" orient="auto-start-reverse"><path d="M0,0 L10,5 L0,10 z" fill="var(--muted)"/></marker><marker id="ah4o" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="9" markerHeight="9" orient="auto-start-reverse"><path d="M0,0 L10,5 L0,10 z" fill="var(--c-orange)"/></marker><marker id="ah4v" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="9" markerHeight="9" orient="auto-start-reverse"><path d="M0,0 L10,5 L0,10 z" fill="var(--c-violet)"/></marker></defs>
@@ -450,7 +465,7 @@ table.tbl td.skill.t-violet { color: var(--c-violet); } table.tbl td.skill.t-gre
   </svg>
 </section>
 
-<!-- ============ 5 WRITING LOOP ============ -->
+<!-- ============ 6 WRITING LOOP ============ -->
 <section class="slide" data-time="24:00" data-title="The writing loop">
   <h2>The writing loop</h2>
   <div class="duo">
@@ -485,7 +500,7 @@ table.tbl td.skill.t-violet { color: var(--c-violet); } table.tbl td.skill.t-gre
   </div>
 </section>
 
-<!-- ============ 6 REVIEWERS FOR EACH JOURNAL ============ -->
+<!-- ============ 7 REVIEWERS FOR EACH JOURNAL ============ -->
 <section class="slide" data-time="28:00" data-title="Reviewers for each journal">
   <h2>Reviewers for each journal</h2>
   <table class="tbl venue">
@@ -497,7 +512,7 @@ table.tbl td.skill.t-violet { color: var(--c-violet); } table.tbl td.skill.t-gre
   </table>
 </section>
 
-<!-- ============ 7 WORKFLOW, VIDEO IN FOCUS ============ -->
+<!-- ============ 8 WORKFLOW, VIDEO IN FOCUS ============ -->
 <section class="slide focus-video" data-time="31:00" data-title="The workflow: video">
   <h2>The workflow</h2>
   <svg class="diagram" viewBox="0 0 1656 470" role="img" aria-label="Six stages from ideas to video, with three decisions kept by the researcher" style="margin-top: 190px">
@@ -535,7 +550,7 @@ table.tbl td.skill.t-violet { color: var(--c-violet); } table.tbl td.skill.t-gre
   </svg>
 </section>
 
-<!-- ============ 8 SKILLS FOLDER ============ -->
+<!-- ============ 9 SKILLS FOLDER ============ -->
 <section class="slide skills" data-time="46:00" data-title="The skills folder">
   <h2>The shared skills folder</h2>
   <div class="duo">
@@ -564,7 +579,7 @@ table.tbl td.skill.t-violet { color: var(--c-violet); } table.tbl td.skill.t-gre
   </div>
 </section>
 
-<!-- ============ 9 CLOSING ============ -->
+<!-- ============ 10 CLOSING ============ -->
 <section class="slide s-close" data-time="50:00" data-title="Questions">
   <div class="lockup" role="img" aria-label="Culverhouse College of Business, Institute of Data and Analytics"></div>
   <h1>Questions</h1>
