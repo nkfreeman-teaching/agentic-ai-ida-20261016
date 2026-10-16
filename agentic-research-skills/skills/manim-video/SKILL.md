@@ -112,6 +112,12 @@ for the touched parts (run `check` first); a changed source or number starts at 
 to the parts list or the breaks is a plan change, so confirm it as in step 2. Finish with steps 7
 to 9, since slide numbers move when a break is added or removed.
 
+When the feedback cites times in the current render ("the slide at 1:02"), cut a still at each
+cited time from the current MP4 into a scratch folder before changing anything, since the next
+final render overwrites it. Tile them in the order of the feedback and list each request as a row
+(what it asks, the still, the change). That sheet lets a reviewer check every request against the
+frame the person meant, and the rows become the review's checklist.
+
 ## Final report
 
 Report the MP4 path with its resolution, frame rate, and length; the deck path with its slide

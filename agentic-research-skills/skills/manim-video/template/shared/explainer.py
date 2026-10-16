@@ -11,6 +11,7 @@ render.sh puts this folder on PYTHONPATH.
 
 import contextlib
 import functools
+import itertools
 import json
 import os
 from pathlib import Path
@@ -106,25 +107,52 @@ def markup(text, size=24, color=INK):
     return _one_line(MarkupText, text, size, color)
 
 
-def make_caption(text, min_scale=CAPTION_MIN_SCALE, max_width=CAPTION_MAX_WIDTH):
+def make_caption(
+    text,
+    min_scale=CAPTION_MIN_SCALE,
+    max_width=CAPTION_MAX_WIDTH,
+    size=CAPTION_SIZE,
+    split_words=False,
+    max_lines=2,
+):
     """One line when it fits, otherwise two lines split at the sentence boundary that
-    best balances their widths. Refuses copy that would need shrinking below min_scale."""
-    line = label(text, size=CAPTION_SIZE)
+    best balances their widths. With split_words, a caption whose sentences do not fit
+    that way splits between words instead, into the fewest lines up to max_lines whose
+    longest line fits, for a video whose captions are too large to hold a sentence per
+    line (a research pitch video's 1.5x captions, 2026-10-16). Refuses copy that would
+    need shrinking below min_scale."""
+    line = label(text, size=size)
     if line.width <= max_width:
         return line.move_to([0, CAPTION_TOP, 0], aligned_edge=UP)
+
+    def balanced(parts, count):
+        """The split of parts into count lines whose longest line has the fewest characters."""
+        splits = (
+            [" ".join(parts[a:b]) for a, b in zip((0, *cuts), (*cuts, len(parts)))]
+            for cuts in itertools.combinations(range(1, len(parts)), count - 1)
+        )
+        return min(splits, key=lambda rows: max(len(row) for row in rows))
+
+    def stacked(rows):
+        return VGroup(*(label(row, size=size) for row in rows)).arrange(
+            DOWN,
+            buff=0.12 * size / CAPTION_SIZE,
+        )
+
     sentences = [part.strip() for part in text.replace(". ", ".\n").replace("? ", "?\n").split("\n")]
-    if len(sentences) < 2:
+    lines = stacked(balanced(sentences, 2)) if len(sentences) >= 2 else None
+    if split_words and (lines is None or lines.width > max_width):
+        # Split on plain spaces only, so a no-break space (U+00A0) keeps a range like
+        # "30% to 37%" on one line.
+        words = text.split(" ")
+        for count in range(2, min(max_lines, len(words)) + 1):
+            lines = stacked(balanced(words, count))
+            if lines.width <= max_width:
+                break
+    if lines is None:
         raise ValueError(
             f"Caption is one sentence too wide for one line ({line.width:.1f} > {max_width}): {text!r}",
         )
-    splits = [
-        (" ".join(sentences[:cut]), " ".join(sentences[cut:])) for cut in range(1, len(sentences))
-    ]
-    first, second = min(splits, key=lambda pair: abs(len(pair[0]) - len(pair[1])))
-    lines = VGroup(label(first, size=CAPTION_SIZE), label(second, size=CAPTION_SIZE)).arrange(
-        DOWN,
-        buff=0.12,
-    )
     if lines.width > max_width:
         if max_width / lines.width < min_scale:
             raise ValueError(
@@ -214,8 +242,20 @@ class ExplainerScene(Slide):
     # than `read`, so a long caption is not cut off when `pace` is low. None keeps the
     # fixed hold (2026-10-15).
     cps = None
-    # Widest one-line caption, in frame units.
+    # Widest one-line caption, in frame units. A research pitch video used 12.4 with
+    # 45-point captions (2026-10-16).
     caption_max_width = CAPTION_MAX_WIDTH
+    # Caption type size, and whether a caption may split between words rather than only
+    # between sentences. Larger captions (a pitch shown on a projector) need both; a
+    # research pitch video set 45, True, and 3 (2026-10-16).
+    caption_size = CAPTION_SIZE
+    caption_split_words = False
+    # More than two lines only where a video allows it; check lists every such caption.
+    caption_max_lines = 2
+    # Least gap, in frame units, between the caption's bottom and the highest other object
+    # at every break. check lists each violation and a render stops on one. None turns the
+    # check off, e.g., for a video with a full-frame background object.
+    caption_gap = 0.4
 
     def __init__(self, *args, **kwargs):
         # manim 0.22 copies max_files_cached into the file writer's settings in
@@ -289,12 +329,23 @@ class ExplainerScene(Slide):
         self.checkpoints.append({"name": name, "time": round(float(self.time) + offset * self.pace, 3)})
 
     def pause(self, name, hold=None):
-        """Hold for viewers of the continuous MP4, then end the slide here."""
+        """Hold for viewers of the continuous MP4, then end the slide here, after checking
+        that the settled frame keeps its content caption_gap below the caption."""
+        if self.caption_gap is not None and self.caption is not None and self.caption in self.mobjects:
+            floor = self.caption.get_bottom()[1] - self.caption_gap
+            top = max((mob.get_top()[1] for mob in self.mobjects if mob is not self.caption), default=floor)
+            if top > floor:
+                message = f"Content reaches y = {top:.2f}, above {floor:.2f} under the caption, at {name}"
+                if not config["dry_run"]:
+                    raise AssertionError(message)
+                self.caption_errors.append(message)
         if hold is None:
             hold = self.read
-            if self.cps and self.caption is not None:
-                on_screen = float(self.time) - self.caption_shown_at
-                hold = max(hold, (self.caption_chars / self.cps - on_screen) / self.pace)
+        # An explicit hold (a part's end) is a minimum as well, so the last caption still
+        # gets its reading time (Codex review of a research pitch video, 2026-10-16).
+        if self.cps and self.caption is not None:
+            on_screen = float(self.time) - self.caption_shown_at
+            hold = max(hold, (self.caption_chars / self.cps - on_screen) / self.pace)
         if hold:
             self.wait(hold)
         self.mark(f"break-{name}", offset=-0.1)
@@ -333,20 +384,36 @@ class ExplainerScene(Slide):
         """Show a caption. Replacing one takes a click first if anything has played since
         the last break, so the presenter decides when the old words leave."""
         try:
-            new = make_caption(text, max_width=self.caption_max_width)
+            new = make_caption(
+                text,
+                max_width=self.caption_max_width,
+                size=self.caption_size,
+                split_words=self.caption_split_words,
+                max_lines=self.caption_max_lines,
+            )
         except ValueError as error:
             # render.sh check collects every caption defect in one pass instead of
             # stopping at the first; a real render still stops here.
             if not config["dry_run"]:
                 raise
             self.caption_errors.append(str(error))
-            new = label("(caption too wide)", size=CAPTION_SIZE).move_to([0, CAPTION_Y, 0])
+            new = label("(caption too wide)", size=self.caption_size).move_to([0, CAPTION_Y, 0])
         else:
             if config["dry_run"]:
                 try:
-                    make_caption(text, min_scale=1, max_width=self.caption_max_width)
+                    make_caption(
+                        text,
+                        min_scale=1,
+                        max_width=self.caption_max_width,
+                        size=self.caption_size,
+                        split_words=self.caption_split_words,
+                        max_lines=self.caption_max_lines,
+                    )
                 except ValueError:
                     self.caption_warnings.append(f"Caption shrinks to fit: {text!r}")
+                # A one-line caption is a Text, whose members are glyphs, so test the type.
+                if type(new) is VGroup and len(new) > 2:
+                    self.caption_warnings.append(f"Caption takes {len(new)} lines: {text!r}")
         if self.caption is not None and (self.caption_since_break or self.content_since_break):
             self.pause(f"before-caption-{len(self.checkpoints):02d}")
         self.helper_playing = True

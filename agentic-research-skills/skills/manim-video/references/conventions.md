@@ -28,6 +28,13 @@ such as the Tijuana and H-2A videos). The template already enforces the ones mar
 - Captions have at most two lines, split at a sentence boundary, and `make_caption` raises
   an error on copy that would need shrinking below 90 percent (enforced). Shorten the
   sentence; never lower the limit.
+- A video with larger captions (a pitch on a projector) sets the scene attributes
+  `caption_size`, `caption_split_words = True`, and, only if a sentence cannot be cut,
+  `caption_max_lines = 3`. Captions then split between words into balanced lines, and
+  `check` lists every caption that takes three lines. A no-break space (U+00A0) between
+  words keeps a numeric range (the spaces around "to" in "30% to 37%") or a short phrase
+  on one line. A research pitch video used 45, True, 3, and `caption_max_width = 12.4`
+  (Oct 16, 2026).
 - One caption line at the default size (30) holds about 69 characters, i.e., 11.8 frame
   units (the limit since Oct 15, 2026; it was 12.8, about 75 characters, measured on the
   Tijuana test, where 72 characters came to 12.2 units). A one-sentence caption longer than
@@ -56,7 +63,8 @@ such as the Tijuana and H-2A videos). The template already enforces the ones mar
 - Draw a jagged series (a monthly count) as a solid line and tell series apart by color and
   width. `DashedVMobject` on a jagged polyline breaks into faint dots.
 - Leave about 0.4 units between the caption's bottom (about 2.95 for two lines) and the
-  highest label in the scene, or labels touch the second caption line.
+  highest label in the scene, or labels touch the second caption line (enforced at every
+  break by `caption_gap`, which `check` reports and a render stops on).
 - A moving object that passes others gets a higher z-index for the move, then drops back.
 - Fading a group fades each member, so overlapping opaque shapes turn translucent and show
   edges behind them. Fade a full-frame cover over the content instead, remove the content,
@@ -68,7 +76,9 @@ such as the Tijuana and H-2A videos). The template already enforces the ones mar
   lists cannot drift apart (enforced). Every caption change and every helper that moves
   something should call `mark()`, with an offset into the motion for mid-transition stills.
 - `READ` (2.2 s) is the hold before each break, so the continuous MP4 reads without a
-  presenter. A part ends on a caption held about 3.5 s.
+  presenter. A part ends on a caption held about 3.5 s. With `cps` set, an explicit hold
+  is a minimum, so a part's last caption still gets its reading time (before Oct 16, 2026,
+  an explicit hold replaced it and cut the pitch's closing captions short).
 - A faster cut (a pitch sent by email) sets the scene class attributes `pace`, `read`, and
   `cps` instead of editing the constants. With `cps` set, a break holds until the caption
   has been on screen for its length divided by `cps` seconds, so a lower `pace` never cuts a
@@ -196,7 +206,9 @@ frames before it was adopted. They apply to every new video.
 - **One box style.** One stroke width (2), one corner radius (0.12), equal padding, and three
   text roles: title 26, body 22, source 18 muted, always in that order. Boxes in one row or
   column share a width and a height. Neutral borders are mid-gray (about #9A9A9A), and a
-  colored border means a category.
+  colored border means a category. A box given a fixed width or height asserts that its
+  text fits inside the padding, since text wider than its box shows only on the frame (a
+  research pitch video's funnel box overflowed after one word was added).
 - **Parallel items get parallel containers.** Two cited studies are both boxed; two
   statistics are both cards of one size.
 - **On-screen text adds what the caption does not** (a number, a name, a source, a label on
@@ -232,7 +244,8 @@ frames before it was adopted. They apply to every new video.
 
 - Review at 720p or higher, and read every contact sheet as an image. A clean exit code is
   not a visual review.
-- Check each sheet for clipped or overlapping text, a caption that wraps to three lines,
+- Check each sheet for clipped or overlapping text, a caption that wraps to three lines
+  (unless the video sets `caption_max_lines = 3`),
   objects outside the frame, a label that collides with a line, stale objects left from an
   earlier step, color that carries meaning without a label, and mid-transition frames that
   scramble text.

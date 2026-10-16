@@ -46,7 +46,8 @@ def main():
         shutil.copytree(
             TEMPLATE,
             args.dest,
-            ignore=shutil.ignore_patterns(SKELETON, "__pycache__"),
+            # .pixi is an installed environment (1.6 GB on 2026-10-16); copying it also ran fill() over its files.
+            ignore=shutil.ignore_patterns(SKELETON, "__pycache__", ".pixi"),
         )
         for path in args.dest.rglob("*"):
             if path.is_file() and path.suffix in {".py", ".sh", ".toml", ".md", ".js"}:
